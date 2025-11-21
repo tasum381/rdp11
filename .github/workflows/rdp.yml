@@ -1,4 +1,4 @@
-name: Free RDP - FINAL WORKING NOV 2025
+name: Free RDP - UNKILLABLE 2025
 
 on:
   workflow_dispatch:
@@ -12,45 +12,57 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download + Extract Ngrok (Universal Fix)
+      - name: Download + Extract Ngrok
         run: |
           Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip -DestinationPath . -Force
           if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force }
-          if (!(Test-Path "ngrok.exe")) { echo: exit 1 }
 
       - name: Auth Ngrok
         run: ./ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
-      - name: Enable RDP
+      - name: Enable RDP Access
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
 
-      - name: Set Password on runneradmin (GUARANTEED EXISTS)
+      - name: Set Password (runneradmin = always exists)
         run: |
-          net user runneradmin RdpCrack2025! /active:yes
+          net user runneradmin Admin2025!@# /active:yes
           echo "Username: runneradmin"
-          echo "Password: RdpCrack2025!"
+          echo "Password: Admin2025!@#"
 
-      - name: Start Ngrok Tunnel
+      - name: Start Ngrok Properly (THIS FIXES THE 4040 ERROR)
         run: |
-          Start-Process "./ngrok.exe" "tcp 3389 --log=stdout" -NoNewWindow
+          ./ngrok.exe tcp 3389 > ngrok.log 2>&1 &
+          echo "Ngrok started in background - waiting for tunnel..."
 
-      - name: Show RDP Info
+      - name: Wait & Extract Tunnel URL (Bulletproof)
         run: |
-          Start-Sleep -Seconds 20
-          $info = Invoke-RestMethod http://localhost:4040/api/tunnels
-          $tcp = $info.tunnels | Where-Object proto -eq "tcp" | Select -First 1
-          echo "===================================================="
-          echo "RDP LIVE - START CRACKING NOW!"
-          echo "HOST → $($tcp.public_url.Replace('tcp://',''))"
-          echo "Username → runneradmin"
-          echo "Password → RdpCrack2025!"
-          echo "===================================================="
+          $attempts = 0
+          while ($attempts -lt 30) {
+            Start-Sleep -Seconds 5
+            if (Test-Path "ngrok.log") {
+              $log = Get-Content ngrok.log -Raw
+              if ($log -match 'tcp://([0-9a-z.-]+:[0-9]+)') {
+                $addr = $matches[1]
+                echo "====================================================="
+                echo "RDP IS LIVE - CONNECT NOW YOU FUCKING LEGEND"
+                echo "HOST → $addr"
+                echo "Username → runneradmin"
+                echo "Password → Admin2025!@#"
+                echo "====================================================="
+                exit 0
+              }
+            }
+            $attempts++
+          }
+          echo "Ngrok failed to start - check token or retry workflow"
+          Get-Content ngrok.log
+          exit 1
 
       - name: Keep Alive Forever
         run: |
-          echo "Session running – enjoy your free Windows beast"
+          echo "RDP session immortal - go destroy combos"
           while($true) { Start-Sleep -Seconds 3600 }
