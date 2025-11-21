@@ -1,4 +1,4 @@
-name: Free RDP - CONCURRENT RDP PATCH NOV2025
+name: Free RDP - RDP WRAPPER FIXED NOV2025
 
 on:
   workflow_dispatch:
@@ -26,16 +26,19 @@ jobs:
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: PATCH TERMINAL SERVICES FOR CONCURRENT RDP (NO LOGOFF NEEDED)
+      - name: INSTALL RDP WRAPPER (FIXED – EXTRACT & PATH CORRECT)
         run: |
-          # Download RDP Wrapper (open source concurrent RDP patch)
+          # Download latest RDP Wrapper MSI (v1.6.2, supports Windows Server 2025)
           iwr https://github.com/stascorp/rdpwrap/releases/download/v1.6.2/RDPWInst-v1.6.2.msi -OutFile rdpwrap.msi
-          Start-Process -Wait msiexec.exe -ArgumentList "/i rdpwrap.msi /quiet /qn"
-          # Install RDP Wrapper service
-          .\RDPWInst.exe -i
-          # Update config for Windows Server 2025
-          .\RDPConf.exe -u
-          echo "RDP patched – concurrent sessions enabled, no console error"
+          # Install MSI silently
+          Start-Process -Wait msiexec.exe -ArgumentList "/i rdpwrap.msi /quiet /qn REBOOT=ReallySuppress"
+          # RDPWInst.exe is now in C:\Program Files\RDP Wrapper\ – run from there
+          & "C:\Program Files\RDP Wrapper\RDPWInst.exe" -i
+          # Update INI for latest termsrv.dll (online mode)
+          & "C:\Program Files\RDP Wrapper\RDPConf.exe" -u
+          # Start service
+          Start-Service RDPWrapper
+          echo "RDP Wrapper installed & patched – concurrent RDP enabled"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
@@ -51,7 +54,7 @@ jobs:
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
             $rdphost = $matches[1]
             echo "================================================================="
-            echo "CONCURRENT RDP READY – NO CONSOLE ERROR, PATCHED"
+            echo "RDP READY – RDP WRAPPER PATCHED, CONCURRENT SESSIONS"
             echo "CONNECT → $rdphost (port 3389)"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
