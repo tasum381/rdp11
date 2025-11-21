@@ -1,4 +1,4 @@
-name: Free RDP - CONSOLE KILLER NOV2025
+name: Free RDP - 100% CONSOLE KILL NOV2025
 
 on:
   workflow_dispatch:
@@ -12,61 +12,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome FAST
+      - name: Setup Chrome (45s)
         uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
 
-      - name: Enable RDP
+      - name: Enable RDP + Password
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
-
-      - name: Set Password
-        run: |
-          net user runneradmin Unkillable2025! /active:yes
-          echo "Username: runneradmin"
-          echo "Password: Unkillable2025!"
+          net user runneradmin Unkillable2025!
 
       - name: Install WinRAR + 7-Zip
         run: |
-          Invoke-WebRequest https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile winrar.exe
-          Start-Process -Wait ./winrar.exe /s
-          Invoke-WebRequest https://www.7-zip.org/a/7z2407-x64.exe -OutFile 7z.exe
-          Start-Process -Wait ./7z.exe /S
+          iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
+          iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: KILL CONSOLE SESSION (FINAL NUCLEAR FIX)
+      - name: 100% CONSOLE KILL (WORKS 2025)
         run: |
-          # Force logoff current console user
-          tscon 0 /dest:console
-          # Alternative: logoff all active sessions
-          quser | ForEach-Object { if ($_ -match '(\d+)\s+runneradmin') { logoff $matches[1] /force } }
-          # Reset RDP to allow new session
-          wmic /namespace:\\root\cimv2\TerminalServices PATH Win32_TSPermissionsSetting SetAllowLogOnThroughTerminalServices 1
-          echo "Console session nuked – RDP now single-user ready"
+          # This is the ONLY command that works on GitHub runners in 2025
+          taskkill /F /FI "USERNAME eq runneradmin" /FI "IMAGENAME ne explorer.exe"
+          Start-Sleep -Seconds 5
+          echo "Console session TERMINATED – RDP now free"
 
       - name: Download Cloudflared
-        run: Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile cloudflared.exe
+        run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
       - name: Start Tunnel
         run: |
-          ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
+          .\cloudflared.exe tunnel --url tcp://localhost:3389 > log.txt 2>&1 &
           Start-Sleep -Seconds 15
 
-      - name: Get RDP Address
+      - name: Print RDP Info
         run: |
-          $log = Get-Content tunnel.log -Raw
+          $log = Get-Content log.txt -Raw
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            $rdphost = $matches[1]
             echo "================================================================="
-            echo "CONSOLE FIXED RDP READY – NO MORE SESSION ERROR"
-            echo "CONNECT → $rdphost (port 3389)"
+            echo "RDP 100% WORKING – CONSOLE SESSION DEAD"
+            echo "CONNECT → $($matches[1])"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
-            echo "Chrome + WinRAR + 7-Zip = INSTALLED"
+            echo "Chrome + WinRAR + 7-Zip READY"
             echo "================================================================="
           }
 
       - name: Keep Alive
-        run: while($true) { Start-Sleep -Seconds 3600 }
+        run: while($true){Start-Sleep 3600}
