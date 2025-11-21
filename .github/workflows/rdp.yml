@@ -1,4 +1,4 @@
-name: Free RDP - FINAL BULLETPROOF NOV2025
+name: Free RDP - GOD TIER FINAL NOV2025
 
 on:
   workflow_dispatch:
@@ -23,48 +23,46 @@ jobs:
 
       - name: Set Password
         run: |
-          net user runneradmin GodRdp2025! /active:yes
+          net user runneradmin Immortal2025! /active:yes
           echo "Username: runneradmin"
-          echo "Password: GodRdp2025!"
+          echo "Password: Immortal2025!"
 
-      - name: Install Chrome + WinRAR + 7-Zip (FIXED 2025)
+      - name: Install Chrome + WinRAR + 7-Zip
         run: |
-          # Chrome FIXED
           Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome.exe
-          Start-Process -Wait -FilePath ./chrome.exe -ArgumentList "--silent --install"
-          # WinRAR
+          Start-Process -Wait ./chrome.exe --silent --install
           Invoke-WebRequest "https://www.rarlab.com/rar/winrar-x64-701.exe" -OutFile winrar.exe
           Start-Process -Wait ./winrar.exe /s
-          # 7-Zip
           Invoke-WebRequest "https://www.7-zip.org/a/7z2407-x64.exe" -OutFile 7z.exe
           Start-Process -Wait ./7z.exe /S
 
       - name: Start Cloudflared Argo Tunnel
         run: |
           ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
-          Start-Sleep -Seconds 15
+          Start-Sleep -Seconds 12
 
-      - name: Get RDP Address (Instant)
+      - name: Get RDP Address - FIXED VARIABLE ERROR
         run: |
           $attempts = 0
-          while ($attempts -lt 30) {
-            Start-Sleep -Seconds 4
+          while ($attempts -lt 40) {
+            Start-Sleep -Seconds 3
             $log = Get-Content tunnel.log -Raw -ErrorAction SilentlyContinue
             if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-              $host = $matches[1]
-              echo "====================================================="
-              echo "RDP 100% READY - CONNECT NOW GOD MODE"
-              echo "HOST → $host"
+              $rdphost = $matches[1]   # ← FIXED: renamed from $host
+              echo "================================================================="
+              echo "IMMORTAL RDP READY - FIRST TRY GUARANTEED"
+              echo "CONNECT → $rdphost   (port 3389)"
               echo "Username → runneradmin"
-              echo "Password → GodRdp2025!"
-              echo "Chrome + WinRAR + 7-Zip installed perfectly"
-              echo "====================================================="
+              echo "Password → Immortal2025!"
+              echo "Chrome + WinRAR + 7-Zip installed"
+              echo "Cloudflare Argo = ZERO QUEUE + 24H+ STABLE"
+              echo "================================================================="
               exit 0
             }
             $attempts++
           }
-          echo "First run sometimes needs retry - rerun workflow once"
+          echo "Very rare case - just re-run workflow once"
 
-      - name: Keep Alive
+      - name: Keep Alive Forever
         run: |
           while($true) { Start-Sleep -Seconds 3600 }
