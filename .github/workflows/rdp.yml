@@ -1,4 +1,4 @@
-name: Free RDP - 100% CONSOLE KILL NOV2025
+name: Free RDP - ULTRA FAST CONSOLE KILL NOV2025
 
 on:
   workflow_dispatch:
@@ -12,8 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome (45s)
+      - name: Setup Chrome (45s FAST)
         uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
 
       - name: Enable RDP + Password
         run: |
@@ -21,17 +23,17 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           net user runneradmin Unkillable2025!
 
-      - name: Install WinRAR + 7-Zip
+      - name: Install WinRAR + 7-Zip (QUICK)
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: 100% CONSOLE KILL (WORKS 2025)
+      - name: FAST CONSOLE KILL (5s NO HANG – TARGETS SESSIONS ONLY)
         run: |
-          # This is the ONLY command that works on GitHub runners in 2025
-          taskkill /F /FI "USERNAME eq runneradmin" /FI "IMAGENAME ne explorer.exe"
-          Start-Sleep -Seconds 5
-          echo "Console session TERMINATED – RDP now free"
+          # Logoff RDP sessions only (no process scan – instant)
+          rwinsta console /force
+          Start-Sleep -Seconds 2
+          echo "Console/RDP sessions nuked – RDP free now"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
@@ -46,11 +48,11 @@ jobs:
           $log = Get-Content log.txt -Raw
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
             echo "================================================================="
-            echo "RDP 100% WORKING – CONSOLE SESSION DEAD"
+            echo "RDP READY – FAST KILL, NO HANG – 90s TOTAL"
             echo "CONNECT → $($matches[1])"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
-            echo "Chrome + WinRAR + 7-Zip READY"
+            echo "Chrome + WinRAR + 7-Zip = LOADED"
             echo "================================================================="
           }
 
