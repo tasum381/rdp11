@@ -1,4 +1,4 @@
-name: Free RDP - ULTRA FAST CONSOLE KILL NOV2025
+name: Free RDP - CONCURRENT RDP PATCH NOV2025
 
 on:
   workflow_dispatch:
@@ -12,10 +12,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome (45s FAST)
+      - name: Setup Chrome (45s)
         uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
 
       - name: Enable RDP + Password
         run: |
@@ -23,17 +21,21 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           net user runneradmin Unkillable2025!
 
-      - name: Install WinRAR + 7-Zip (QUICK)
+      - name: Install WinRAR + 7-Zip
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: FAST CONSOLE KILL (5s NO HANG – TARGETS SESSIONS ONLY)
+      - name: PATCH TERMINAL SERVICES FOR CONCURRENT RDP (NO LOGOFF NEEDED)
         run: |
-          # Logoff RDP sessions only (no process scan – instant)
-          rwinsta console /force
-          Start-Sleep -Seconds 2
-          echo "Console/RDP sessions nuked – RDP free now"
+          # Download RDP Wrapper (open source concurrent RDP patch)
+          iwr https://github.com/stascorp/rdpwrap/releases/download/v1.6.2/RDPWInst-v1.6.2.msi -OutFile rdpwrap.msi
+          Start-Process -Wait msiexec.exe -ArgumentList "/i rdpwrap.msi /quiet /qn"
+          # Install RDP Wrapper service
+          .\RDPWInst.exe -i
+          # Update config for Windows Server 2025
+          .\RDPConf.exe -u
+          echo "RDP patched – concurrent sessions enabled, no console error"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
@@ -47,9 +49,10 @@ jobs:
         run: |
           $log = Get-Content log.txt -Raw
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
+            $rdphost = $matches[1]
             echo "================================================================="
-            echo "RDP READY – FAST KILL, NO HANG – 90s TOTAL"
-            echo "CONNECT → $($matches[1])"
+            echo "CONCURRENT RDP READY – NO CONSOLE ERROR, PATCHED"
+            echo "CONNECT → $rdphost (port 3389)"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
             echo "Chrome + WinRAR + 7-Zip = LOADED"
