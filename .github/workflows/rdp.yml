@@ -1,4 +1,4 @@
-name: Free RDP - IMMORTAL FINAL NOV2025
+name: Free RDP - SINGLE USER FIXED NOV2025
 
 on:
   workflow_dispatch:
@@ -27,17 +27,20 @@ jobs:
           echo "Username: runneradmin"
           echo "Password: Unkillable2025!"
 
-      - name: Install Chrome + WinRAR + 7-Zip (100% FIXED NOV2025)
+      - name: Install Chrome + WinRAR + 7-Zip
         run: |
-          # Chrome - FINAL WORKING METHOD
           Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome.exe
-          Start-Process -Wait -FilePath ./chrome.exe -ArgumentList "/silent", "/install"
-          # WinRAR
+          Start-Process -Wait ./chrome.exe /silent /install
           Invoke-WebRequest "https://www.rarlab.com/rar/winrar-x64-701.exe" -OutFile winrar.exe
           Start-Process -Wait ./winrar.exe /s
-          # 7-Zip
           Invoke-WebRequest "https://www.7-zip.org/a/7z2407-x64.exe" -OutFile 7z.exe
           Start-Process -Wait ./7z.exe /S
+
+      - name: KILL DEFAULT CONSOLE SESSION (FIXES "SESSION IN PROGRESS" ERROR)
+        run: |
+          logoff runneradmin /force
+          qwinsta | ForEach-Object { if ($_ -match 'rdp-tcp#(\d+)') { $sessionId = $matches[1]; rwinsta $sessionId /force } }
+          echo "All old sessions killed - now single user only"
 
       - name: Start Cloudflared Argo Tunnel
         run: |
@@ -53,18 +56,17 @@ jobs:
             if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
               $rdphost = $matches[1]
               echo "================================================================="
-              echo "RDP FINALLY YOURS - NO MORE ERRORS EVER"
+              echo "SINGLE USER RDP READY - NO MORE CONSOLE ERRORS"
               echo "CONNECT → $rdphost   (port 3389)"
               echo "Username → runneradmin"
               echo "Password → Unkillable2025!"
-              echo "Chrome + WinRAR + 7-Zip = FULLY INSTALLED"
-              echo "Cloudflare Argo = INSTANT + 24H+ STABLE"
+              echo "Chrome + WinRAR + 7-Zip installed"
               echo "================================================================="
               exit 0
             }
             $attempts++
           }
-          echo "Re-run once if needed (99% first try now)"
+          echo "Re-run if needed"
 
       - name: Keep Alive Forever
         run: |
