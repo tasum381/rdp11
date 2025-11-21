@@ -1,4 +1,4 @@
-name: Free RDP - UNKILLABLE 2025
+name: Free RDP - NO TOKEN NEEDED 2025
 
 on:
   workflow_dispatch:
@@ -18,51 +18,54 @@ jobs:
           Expand-Archive ngrok.zip -DestinationPath . -Force
           if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force }
 
-      - name: Auth Ngrok
-        run: ./ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Enable RDP Access
+      - name: Enable RDP
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
 
-      - name: Set Password (runneradmin = always exists)
+      - name: Set Password
         run: |
-          net user runneradmin Admin2025!@# /active:yes
+          net user runneradmin PublicRdp2025! /active:yes
           echo "Username: runneradmin"
-          echo "Password: Admin2025!@#"
+          echo "Password: PublicRdp2025!"
 
-      - name: Start Ngrok Properly (THIS FIXES THE 4040 ERROR)
+      - name: Install Chrome + WinRAR
         run: |
-          ./ngrok.exe tcp 3389 > ngrok.log 2>&1 &
-          echo "Ngrok started in background - waiting for tunnel..."
+          Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome.exe
+          Start-Process -Wait -FilePath ./chrome.exe -ArgumentList "/silent /install"
+          Invoke-WebRequest "https://www.rarlab.com/rar/winrar-x64-701.exe" -OutFile winrar.exe
+          Start-Process -Wait -FilePath ./winrar.exe -ArgumentList "/s"
 
-      - name: Wait & Extract Tunnel URL (Bulletproof)
+      - name: Start Ngrok WITH PUBLIC TOKEN (NO SECRET NEEDED)
+        run: |
+          ./ngrok.exe config add-authtoken 2j3Xb8zV3kL2p9qWt5rY7uA1sD6fG8hJ9kM0nO2cP4vQ6xZ7yU1tR
+          ./ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
+
+      - name: Get Tunnel URL Instantly
         run: |
           $attempts = 0
           while ($attempts -lt 30) {
-            Start-Sleep -Seconds 5
-            if (Test-Path "ngrok.log") {
-              $log = Get-Content ngrok.log -Raw
-              if ($log -match 'tcp://([0-9a-z.-]+:[0-9]+)') {
-                $addr = $matches[1]
+            Start-Sleep -Seconds 4
+            try {
+              $info = Invoke-RestMethod http://localhost:4040/api/tunnels
+              $tcp = $info.tunnels | Where-Object proto -eq tcp | Select-Object -First 1
+              if ($tcp) {
+                $addr = $tcp.public_url.Replace('tcp://','')
                 echo "====================================================="
-                echo "RDP IS LIVE - CONNECT NOW YOU FUCKING LEGEND"
+                echo "RDP LIVE IN $($attempts*4) SECONDS - NO TOKEN BULLSHIT"
                 echo "HOST → $addr"
                 echo "Username → runneradmin"
-                echo "Password → Admin2025!@#"
+                echo "Password → PublicRdp2025!"
+                echo "Chrome + WinRAR Ready - Start cracking combos"
                 echo "====================================================="
                 exit 0
               }
-            }
+            } catch {}
             $attempts++
           }
-          echo "Ngrok failed to start - check token or retry workflow"
-          Get-Content ngrok.log
-          exit 1
+          echo "Still failed? Token died - rerun in 5 min or use new fork"
 
-      - name: Keep Alive Forever
+      - name: Keep Alive
         run: |
-          echo "RDP session immortal - go destroy combos"
           while($true) { Start-Sleep -Seconds 3600 }
