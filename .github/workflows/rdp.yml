@@ -1,4 +1,4 @@
-name: Free RDP Fixed 2025
+name: Free RDP - Fixed Nov 2025
 
 on:
   workflow_dispatch:
@@ -12,41 +12,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check NGROK Token Exists
+      - name: Download Latest Ngrok
         run: |
-          if (-not "${{ secrets.NGROK_AUTH_TOKEN }}") { echo "ERROR: NGROK_AUTH_TOKEN secret is missing! Add it in Settings > Secrets"; exit 1 }
-          echo "Token found, proceeding..."
+          Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
-      - name: Download Ngrok
-        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+      - name: Extract Ngrok Properly
+        run: |
+          Expand-Archive ngrok.zip -DestinationPath . -Force
+          Move-Item -Path "ngrok/ngrok.exe" -Destination "ngrok.exe" -Force   # ← THIS FIXES THE PATH ERROR
 
-      - name: Extract
-        run: Expand-Archive ngrok.zip .
+      - name: Verify Ngrok Exists
+        run: |
+          if (!(Test-Path "ngrok.exe")) { echo "NGROK.EXE NOT FOUND - EXTRACTION FAILED"; exit 1 }
+          echo "ngrok.exe found - good to go"
 
-      - name: Auth Ngrok
-        run: .\ngrok\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+      - name: Auth Ngrok (This Will Work Now)
+        run: |
+          ./ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Enable RDP
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
 
-      - name: Create Admin User + Password
+      - name: Set Password
         run: |
-          net user administrator JohnTech1234 /active:yes
-          net user administrator /passwordreq:no
+          net user administrator Abc123456 /active:yes
           echo "Username: administrator"
-          echo "Password: JohnTech1234"
+          echo "Password: Abc123456"
 
-      - name: Start Tunnel
-        run: .\ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
-
-      - name: Get Tunnel Info
+      - name: Start Ngrok Tunnel
         run: |
-          Start-Sleep -Seconds 15
-          Invoke-WebRequest http://localhost:4040/api/tunnels -UseBasicParsing | ConvertFrom-Json | Select-Object -ExpandProperty tunnels | Where-Object { $_.proto -eq "tcp" } | ForEach-Object { echo "RDP ADDRESS: $($_.public_url.Replace('tcp://', ''))" }
+          ./ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
+
+      - name: Wait & Show RDP Address
+        run: |
+          Start-Sleep -Seconds 20
+          $tunnel = Invoke-WebRequest http://localhost:4040/api/tunnels -UseBasicParsing | ConvertFrom-Json
+          $addr = $tunnel.tunnels | Where-Object proto -eq tcp | Select-Object -First 1 -ExpandProperty public_url
+          echo "==================================================================="
+          echo "RDP READY - CONNECT NOW!"
+          echo "Address: $($addr.Replace('tcp://',''))"
+          echo "Username: administrator"
+          echo "Password: Abc123456"
+          echo "==================================================================="
+          echo "Tunnel URL: $addr"
 
       - name: Keep Alive Forever
         run: |
-          echo "RDP IS READY - GO CRACK!"
+          echo "Cracking session active - enjoy your free beast RDP"
           while($true) { Start-Sleep -Seconds 3600 }
