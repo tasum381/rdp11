@@ -1,0 +1,52 @@
+name: Free RDP Fixed 2025
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 1440
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check NGROK Token Exists
+        run: |
+          if (-not "${{ secrets.NGROK_AUTH_TOKEN }}") { echo "ERROR: NGROK_AUTH_TOKEN secret is missing! Add it in Settings > Secrets"; exit 1 }
+          echo "Token found, proceeding..."
+
+      - name: Download Ngrok
+        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+
+      - name: Extract
+        run: Expand-Archive ngrok.zip .
+
+      - name: Auth Ngrok
+        run: .\ngrok\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Enable RDP
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Create Admin User + Password
+        run: |
+          net user administrator JohnTech1234 /active:yes
+          net user administrator /passwordreq:no
+          echo "Username: administrator"
+          echo "Password: JohnTech1234"
+
+      - name: Start Tunnel
+        run: .\ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
+
+      - name: Get Tunnel Info
+        run: |
+          Start-Sleep -Seconds 15
+          Invoke-WebRequest http://localhost:4040/api/tunnels -UseBasicParsing | ConvertFrom-Json | Select-Object -ExpandProperty tunnels | Where-Object { $_.proto -eq "tcp" } | ForEach-Object { echo "RDP ADDRESS: $($_.public_url.Replace('tcp://', ''))" }
+
+      - name: Keep Alive Forever
+        run: |
+          echo "RDP IS READY - GO CRACK!"
+          while($true) { Start-Sleep -Seconds 3600 }
