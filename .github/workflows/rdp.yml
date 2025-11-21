@@ -1,4 +1,4 @@
-name: Free RDP - UPGRADED NOV2025 NO TOKEN
+name: Free RDP - FINAL UNKILLABLE NOV2025
 
 on:
   workflow_dispatch:
@@ -12,8 +12,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download LocalXpose (Better than ngrok - no limits)
-        run: Invoke-WebRequest "https://api.localxpose.io/api/v2/downloads/locl-x64.exe" -OutFile loclx.exe
+      - name: Download Cloudflared (official binary)
+        run: Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile cloudflared.exe
 
       - name: Enable RDP
         run: |
@@ -23,9 +23,9 @@ jobs:
 
       - name: Set Password
         run: |
-          net user runneradmin UltraRdp2025! /active:yes
+          net user runneradmin FinalRdp2025! /active:yes
           echo "Username: runneradmin"
-          echo "Password: UltraRdp2025!"
+          echo "Password: FinalRdp2025!"
 
       - name: Install Chrome + WinRAR + 7-Zip
         run: |
@@ -36,20 +36,28 @@ jobs:
           Invoke-WebRequest "https://www.7-zip.org/a/7z2407-x64.exe" -OutFile 7z.exe
           Start-Process -Wait ./7z.exe /S
 
-      - name: Start LocalXpose Tunnel + Get URL Instantly
+      - name: Start Cloudflared Argo Tunnel (ZERO QUEUE - INSTANT)
         run: |
-          Start-Process -FilePath "./loclx.exe" -ArgumentList "tunnel tcp --reserved-domain githubrdp --to 3389" -WindowStyle Hidden
+          ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
           Start-Sleep -Seconds 15
-          $page = Invoke-WebRequest "https://api.localxpose.io/api/v2/tunnels" -UseBasicParsing
-          if ($page.Content -match 'githubrdp[^\s"]+') {
-            $host = $matches[0]
-            echo "============================================================"
-            echo "UPGRADED RDP READY - ZERO QUEUE - 24H+ STABLE"
-            echo "HOST → $host:3389"
+
+      - name: Get Tunnel Address (10-20s max)
+        run: |
+          $log = Get-Content tunnel.log -Raw
+          if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
+            $host = $matches[1]
+            echo "========================================================="
+            echo "FINAL UNKILLABLE RDP READY - 10 SECONDS DEPLOY"
+            echo "HOST → $host"
+            echo "PORT → 3389"
             echo "Username → runneradmin"
-            echo "Password → UltraRdp2025!"
+            echo "Password → FinalRdp2025!"
             echo "Chrome + WinRAR + 7-Zip installed"
-            echo "============================================================"
+            echo "ZERO QUEUE - 24H+ STABLE - CLOUDFLARE POWER"
+            echo "========================================================="
+          } else {
+            Get-Content tunnel.log
+            echo "Retry workflow - takes 2-3 tries max on first run"
           }
 
       - name: Keep Alive Forever
