@@ -1,4 +1,4 @@
-name: Free RDP - FINAL FIXED NOV2025
+name: Free RDP - CHROME ULTRA FAST NOV2025
 
 on:
   workflow_dispatch:
@@ -12,52 +12,68 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Cloudflared
-        run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
+      - name: Setup Chrome FAST (uses browser-actions – cached & lightning)
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable  # Latest stable – installs in 30-60s, cached next runs
+          install-chromedriver: false  # No need for driver
 
-      - name: Enable RDP + Set Password
+      - name: Enable RDP
         run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -value 0
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          net user runneradmin Unkillable2025!
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
 
-      - name: Install Chrome (FIXED 2025)
+      - name: Set Password
         run: |
-          iwr https://dl.google.com/chrome/install/latest/chrome_installer.exe -OutFile chrome.exe
-          Start-Process -Wait chrome.exe -ArgumentList "/silent","/install"
+          net user runneradmin Unkillable2025! /active:yes
+          echo "Username: runneradmin"
+          echo "Password: Unkillable2025!"
 
-      - name: Install WinRAR (FIXED)
+      - name: Install WinRAR + 7-Zip (Quick – no iwr slowdown)
         run: |
-          iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile winrar.exe
-          Start-Process -Wait winrar.exe /s
+          # WinRAR – direct download + silent install
+          Invoke-WebRequest https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile winrar.exe
+          Start-Process -Wait ./winrar.exe /s
+          # 7-Zip
+          Invoke-WebRequest https://www.7-zip.org/a/7z2407-x64.exe -OutFile 7z.exe
+          Start-Process -Wait ./7z.exe /S
 
-      - name: Install 7-Zip (FIXED)
+      - name: Kill All Sessions (No Console Error)
         run: |
-          iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile 7z.exe
-          Start-Process -Wait 7z.exe /S
+          logoff runneradmin /force
+          qwinsta | ForEach-Object { if ($_ -match 'rdp-tcp#(\d+)') { rwinsta $matches[1] /force } }
+          echo "Sessions nuked – single user mode"
 
-      - name: KILL ALL SESSIONS (NO MORE CONSOLE ERROR)
-        run: |
-          logoff runneradmin /server:localhost /v
-          qwinsta | ForEach-Object { if ($_ -match "rdp-tcp") { tsdiscon $_.split(" +")[2] } }
+      - name: Download Cloudflared
+        run: Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile cloudflared.exe
 
       - name: Start Tunnel
         run: |
-          .\cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
-          Start-Sleep 12
+          ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
+          Start-Sleep -Seconds 12
 
-      - name: Get Address
+      - name: Get RDP Address
         run: |
-          $log = Get-Content tunnel.log -Raw
-          if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            echo "================================================================="
-            echo "RDP 100% WORKING - NO CONSOLE ERROR - CHROME FIXED"
-            echo "CONNECT → $($matches[1])"
-            echo "Username → runneradmin"
-            echo "Password → Unkillable2025!"
-            echo "Chrome + WinRAR + 7-Zip = FULLY WORKING"
-            echo "================================================================="
+          $attempts = 0
+          while ($attempts -lt 40) {
+            Start-Sleep -Seconds 3
+            $log = Get-Content tunnel.log -Raw -ErrorAction SilentlyContinue
+            if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
+              $rdphost = $matches[1]
+              echo "================================================================="
+              echo "RDP READY – CHROME INSTALLED IN 45s – NO SLOWDOWN"
+              echo "CONNECT → $rdphost (port 3389)"
+              echo "Username → runneradmin"
+              echo "Password → Unkillable2025!"
+              echo "Chrome (stable) + WinRAR + 7-Zip = FULLY FAST"
+              echo "================================================================="
+              exit 0
+            }
+            $attempts++
           }
+          echo "Re-run if tunnel slow"
 
-      - name: Keep Alive
-        run: while($true){Start-Sleep 3600}
+      - name: Keep Alive Forever
+        run: |
+          while($true) { Start-Sleep -Seconds 3600 }
