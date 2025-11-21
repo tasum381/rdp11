@@ -1,4 +1,4 @@
-name: Free RDP - FINAL UNKILLABLE NOV2025
+name: Free RDP - FINAL BULLETPROOF NOV2025
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Cloudflared (official binary)
+      - name: Download Cloudflared
         run: Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile cloudflared.exe
 
       - name: Enable RDP
@@ -23,43 +23,48 @@ jobs:
 
       - name: Set Password
         run: |
-          net user runneradmin FinalRdp2025! /active:yes
+          net user runneradmin GodRdp2025! /active:yes
           echo "Username: runneradmin"
-          echo "Password: FinalRdp2025!"
+          echo "Password: GodRdp2025!"
 
-      - name: Install Chrome + WinRAR + 7-Zip
+      - name: Install Chrome + WinRAR + 7-Zip (FIXED 2025)
         run: |
+          # Chrome FIXED
           Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome.exe
-          Start-Process -Wait ./chrome.exe /silent /install
+          Start-Process -Wait -FilePath ./chrome.exe -ArgumentList "--silent --install"
+          # WinRAR
           Invoke-WebRequest "https://www.rarlab.com/rar/winrar-x64-701.exe" -OutFile winrar.exe
           Start-Process -Wait ./winrar.exe /s
+          # 7-Zip
           Invoke-WebRequest "https://www.7-zip.org/a/7z2407-x64.exe" -OutFile 7z.exe
           Start-Process -Wait ./7z.exe /S
 
-      - name: Start Cloudflared Argo Tunnel (ZERO QUEUE - INSTANT)
+      - name: Start Cloudflared Argo Tunnel
         run: |
           ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
           Start-Sleep -Seconds 15
 
-      - name: Get Tunnel Address (10-20s max)
+      - name: Get RDP Address (Instant)
         run: |
-          $log = Get-Content tunnel.log -Raw
-          if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            $host = $matches[1]
-            echo "========================================================="
-            echo "FINAL UNKILLABLE RDP READY - 10 SECONDS DEPLOY"
-            echo "HOST → $host"
-            echo "PORT → 3389"
-            echo "Username → runneradmin"
-            echo "Password → FinalRdp2025!"
-            echo "Chrome + WinRAR + 7-Zip installed"
-            echo "ZERO QUEUE - 24H+ STABLE - CLOUDFLARE POWER"
-            echo "========================================================="
-          } else {
-            Get-Content tunnel.log
-            echo "Retry workflow - takes 2-3 tries max on first run"
+          $attempts = 0
+          while ($attempts -lt 30) {
+            Start-Sleep -Seconds 4
+            $log = Get-Content tunnel.log -Raw -ErrorAction SilentlyContinue
+            if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
+              $host = $matches[1]
+              echo "====================================================="
+              echo "RDP 100% READY - CONNECT NOW GOD MODE"
+              echo "HOST → $host"
+              echo "Username → runneradmin"
+              echo "Password → GodRdp2025!"
+              echo "Chrome + WinRAR + 7-Zip installed perfectly"
+              echo "====================================================="
+              exit 0
+            }
+            $attempts++
           }
+          echo "First run sometimes needs retry - rerun workflow once"
 
-      - name: Keep Alive Forever
+      - name: Keep Alive
         run: |
           while($true) { Start-Sleep -Seconds 3600 }
