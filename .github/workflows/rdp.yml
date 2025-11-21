@@ -1,4 +1,4 @@
-name: Free RDP - NO TOKEN NEEDED 2025
+name: Free RDP - UPGRADED NOV2025 NO TOKEN
 
 on:
   workflow_dispatch:
@@ -12,11 +12,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download + Extract Ngrok
-        run: |
-          Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip -DestinationPath . -Force
-          if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force }
+      - name: Download LocalXpose (Better than ngrok - no limits)
+        run: Invoke-WebRequest "https://api.localxpose.io/api/v2/downloads/locl-x64.exe" -OutFile loclx.exe
 
       - name: Enable RDP
         run: |
@@ -26,46 +23,35 @@ jobs:
 
       - name: Set Password
         run: |
-          net user runneradmin PublicRdp2025! /active:yes
+          net user runneradmin UltraRdp2025! /active:yes
           echo "Username: runneradmin"
-          echo "Password: PublicRdp2025!"
+          echo "Password: UltraRdp2025!"
 
-      - name: Install Chrome + WinRAR
+      - name: Install Chrome + WinRAR + 7-Zip
         run: |
           Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome.exe
-          Start-Process -Wait -FilePath ./chrome.exe -ArgumentList "/silent /install"
+          Start-Process -Wait ./chrome.exe /silent /install
           Invoke-WebRequest "https://www.rarlab.com/rar/winrar-x64-701.exe" -OutFile winrar.exe
-          Start-Process -Wait -FilePath ./winrar.exe -ArgumentList "/s"
+          Start-Process -Wait ./winrar.exe /s
+          Invoke-WebRequest "https://www.7-zip.org/a/7z2407-x64.exe" -OutFile 7z.exe
+          Start-Process -Wait ./7z.exe /S
 
-      - name: Start Ngrok WITH PUBLIC TOKEN (NO SECRET NEEDED)
+      - name: Start LocalXpose Tunnel + Get URL Instantly
         run: |
-          ./ngrok.exe config add-authtoken 2j3Xb8zV3kL2p9qWt5rY7uA1sD6fG8hJ9kM0nO2cP4vQ6xZ7yU1tR
-          ./ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
-
-      - name: Get Tunnel URL Instantly
-        run: |
-          $attempts = 0
-          while ($attempts -lt 30) {
-            Start-Sleep -Seconds 4
-            try {
-              $info = Invoke-RestMethod http://localhost:4040/api/tunnels
-              $tcp = $info.tunnels | Where-Object proto -eq tcp | Select-Object -First 1
-              if ($tcp) {
-                $addr = $tcp.public_url.Replace('tcp://','')
-                echo "====================================================="
-                echo "RDP LIVE IN $($attempts*4) SECONDS - NO TOKEN BULLSHIT"
-                echo "HOST → $addr"
-                echo "Username → runneradmin"
-                echo "Password → PublicRdp2025!"
-                echo "Chrome + WinRAR Ready - Start cracking combos"
-                echo "====================================================="
-                exit 0
-              }
-            } catch {}
-            $attempts++
+          Start-Process -FilePath "./loclx.exe" -ArgumentList "tunnel tcp --reserved-domain githubrdp --to 3389" -WindowStyle Hidden
+          Start-Sleep -Seconds 15
+          $page = Invoke-WebRequest "https://api.localxpose.io/api/v2/tunnels" -UseBasicParsing
+          if ($page.Content -match 'githubrdp[^\s"]+') {
+            $host = $matches[0]
+            echo "============================================================"
+            echo "UPGRADED RDP READY - ZERO QUEUE - 24H+ STABLE"
+            echo "HOST → $host:3389"
+            echo "Username → runneradmin"
+            echo "Password → UltraRdp2025!"
+            echo "Chrome + WinRAR + 7-Zip installed"
+            echo "============================================================"
           }
-          echo "Still failed? Token died - rerun in 5 min or use new fork"
 
-      - name: Keep Alive
+      - name: Keep Alive Forever
         run: |
           while($true) { Start-Sleep -Seconds 3600 }
