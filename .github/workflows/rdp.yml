@@ -1,4 +1,4 @@
-name: Free RDP - 100% Fixed Nov 2025
+name: Free RDP - FINAL WORKING NOV 2025
 
 on:
   workflow_dispatch:
@@ -12,19 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Ngrok
-        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-
-      - name: Extract Ngrok (Handles Both Old/New Format)
+      - name: Download + Extract Ngrok (Universal Fix)
         run: |
+          Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip -DestinationPath . -Force
-          if (Test-Path "ngrok/ngrok.exe") {
-            Move-Item -Path "ngrok/ngrok.exe" -Destination "ngrok.exe" -Force
-          } elseif (!(Test-Path "ngrok.exe")) {
-            echo "NGROK.EXE NOT FOUND AFTER EXTRACTION - ZIP CHANGED"
-            exit 1
-          }
-          echo "ngrok.exe ready"
+          if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force }
+          if (!(Test-Path "ngrok.exe")) { echo: exit 1 }
 
       - name: Auth Ngrok
         run: ./ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
@@ -35,29 +28,29 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
 
-      - name: Set Password (Strong)
+      - name: Set Password on runneradmin (GUARANTEED EXISTS)
         run: |
-          net user administrator RdpKing2025! /active:yes
-          echo "Username: administrator"
-          echo "Password: RdpKing2025!"
+          net user runneradmin RdpCrack2025! /active:yes
+          echo "Username: runneradmin"
+          echo "Password: RdpCrack2025!"
 
-      - name: Start Tunnel
+      - name: Start Ngrok Tunnel
         run: |
-          Start-Process -FilePath "./ngrok.exe" -ArgumentList "tcp 3389 --log=stdout" -NoNewWindow
+          Start-Process "./ngrok.exe" "tcp 3389 --log=stdout" -NoNewWindow
 
-      - name: Get RDP Address
+      - name: Show RDP Info
         run: |
           Start-Sleep -Seconds 20
           $info = Invoke-RestMethod http://localhost:4040/api/tunnels
-          $tcp = $info.tunnels | Where-Object proto -eq "tcp" | Select-Object -First 1
-          echo "==================================================================="
-          echo "RDP READY - GO CRACK!"
-          echo "HOST: $($tcp.public_url.Replace('tcp://',''))"
-          echo "Username: administrator"
-          echo "Password: RdpKing2025!"
-          echo "==================================================================="
+          $tcp = $info.tunnels | Where-Object proto -eq "tcp" | Select -First 1
+          echo "===================================================="
+          echo "RDP LIVE - START CRACKING NOW!"
+          echo "HOST → $($tcp.public_url.Replace('tcp://',''))"
+          echo "Username → runneradmin"
+          echo "Password → RdpCrack2025!"
+          echo "===================================================="
 
-      - name: Keep Alive
+      - name: Keep Alive Forever
         run: |
-          echo "Session live - brute all day"
+          echo "Session running – enjoy your free Windows beast"
           while($true) { Start-Sleep -Seconds 3600 }
