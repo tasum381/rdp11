@@ -1,4 +1,4 @@
-name: Free RDP - CHROME ULTRA FAST NOV2025
+name: Free RDP - CONSOLE KILLER NOV2025
 
 on:
   workflow_dispatch:
@@ -12,11 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome FAST (uses browser-actions – cached & lightning)
+      - name: Setup Chrome FAST
         uses: browser-actions/setup-chrome@v2
         with:
-          chrome-version: stable  # Latest stable – installs in 30-60s, cached next runs
-          install-chromedriver: false  # No need for driver
+          chrome-version: stable
 
       - name: Enable RDP
         run: |
@@ -30,20 +29,22 @@ jobs:
           echo "Username: runneradmin"
           echo "Password: Unkillable2025!"
 
-      - name: Install WinRAR + 7-Zip (Quick – no iwr slowdown)
+      - name: Install WinRAR + 7-Zip
         run: |
-          # WinRAR – direct download + silent install
           Invoke-WebRequest https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile winrar.exe
           Start-Process -Wait ./winrar.exe /s
-          # 7-Zip
           Invoke-WebRequest https://www.7-zip.org/a/7z2407-x64.exe -OutFile 7z.exe
           Start-Process -Wait ./7z.exe /S
 
-      - name: Kill All Sessions (No Console Error)
+      - name: KILL CONSOLE SESSION (FINAL NUCLEAR FIX)
         run: |
-          logoff runneradmin /force
-          qwinsta | ForEach-Object { if ($_ -match 'rdp-tcp#(\d+)') { rwinsta $matches[1] /force } }
-          echo "Sessions nuked – single user mode"
+          # Force logoff current console user
+          tscon 0 /dest:console
+          # Alternative: logoff all active sessions
+          quser | ForEach-Object { if ($_ -match '(\d+)\s+runneradmin') { logoff $matches[1] /force } }
+          # Reset RDP to allow new session
+          wmic /namespace:\\root\cimv2\TerminalServices PATH Win32_TSPermissionsSetting SetAllowLogOnThroughTerminalServices 1
+          echo "Console session nuked – RDP now single-user ready"
 
       - name: Download Cloudflared
         run: Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile cloudflared.exe
@@ -51,29 +52,21 @@ jobs:
       - name: Start Tunnel
         run: |
           ./cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
-          Start-Sleep -Seconds 12
+          Start-Sleep -Seconds 15
 
       - name: Get RDP Address
         run: |
-          $attempts = 0
-          while ($attempts -lt 40) {
-            Start-Sleep -Seconds 3
-            $log = Get-Content tunnel.log -Raw -ErrorAction SilentlyContinue
-            if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-              $rdphost = $matches[1]
-              echo "================================================================="
-              echo "RDP READY – CHROME INSTALLED IN 45s – NO SLOWDOWN"
-              echo "CONNECT → $rdphost (port 3389)"
-              echo "Username → runneradmin"
-              echo "Password → Unkillable2025!"
-              echo "Chrome (stable) + WinRAR + 7-Zip = FULLY FAST"
-              echo "================================================================="
-              exit 0
-            }
-            $attempts++
+          $log = Get-Content tunnel.log -Raw
+          if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
+            $rdphost = $matches[1]
+            echo "================================================================="
+            echo "CONSOLE FIXED RDP READY – NO MORE SESSION ERROR"
+            echo "CONNECT → $rdphost (port 3389)"
+            echo "Username → runneradmin"
+            echo "Password → Unkillable2025!"
+            echo "Chrome + WinRAR + 7-Zip = INSTALLED"
+            echo "================================================================="
           }
-          echo "Re-run if tunnel slow"
 
-      - name: Keep Alive Forever
-        run: |
-          while($true) { Start-Sleep -Seconds 3600 }
+      - name: Keep Alive
+        run: while($true) { Start-Sleep -Seconds 3600 }
