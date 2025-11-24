@@ -1,10 +1,10 @@
-name: Free RDP - NLA DISABLED NOV2025 (NO PATCH NEEDED)
+name: Free RDP 16GB - NGROK STABLE 2025
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  rdp:
     runs-on: windows-latest
     timeout-minutes: 1440
 
@@ -12,45 +12,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome (45s FAST)
+      - name: Setup Chrome (45s)
         uses: browser-actions/setup-chrome@v2
 
-      - name: Enable RDP + Disable NLA for Shadow (FIXES CONSOLE ERROR)
+      - name: Enable RDP + Disable NLA + Password
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           net user runneradmin Unkillable2025! /active:yes
-          # Enable shadow mode (allows RDP without killing console)
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-          echo "RDP enabled with NLA off – shadow sessions allowed, no console kill"
 
-      - name: Install WinRAR + 7-Zip (QUICK)
+      - name: Install WinRAR + 7-Zip
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: Download Cloudflared
-        run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
-
-      - name: Start Tunnel
+      - name: Download & Start Ngrok (YOUR TOKEN)
         run: |
-          .\cloudflared.exe tunnel --url tcp://localhost:3389 > log.txt 2>&1 &
-          Start-Sleep -Seconds 15
+          iwr https://bin.equinox.io/c/bNyj1mQVY4/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+          Expand-Archive ngrok.zip -DestinationPath .
+          .\ngrok.exe config add-authtoken 35uzKmoraTsPEt4w0iclGzZrBtO_7qGvuXZSHnbiH2RqRfXE1
+          .\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
 
-      - name: Print RDP Info
+      - name: Wait & Show Ngrok URL
         run: |
-          $log = Get-Content log.txt -Raw
-          if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            $rdphost = $matches[1]
-            echo "================================================================="
-            echo "RDP READY – NLA OFF, SHADOW MODE – NO PATCH/ERROR"
-            echo "CONNECT → $rdphost (port 3389)"
+          Start-Sleep -Seconds 20
+          $log = Get-Content ngrok.log -Raw
+          if ($log -match 'tcp://([0-9a-z.-]+tcp\.ngrok\.io:\d+)') {
+            $ngrok = $matches[1]
+            echo "=================================================="
+            echo "YOUR NGROK RDP IS LIVE – 8+ HOURS STABLE"
+            echo "CONNECT → tcp://$ngrok"
+            echo "OR BROWSER → https://$ngrok"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
-            echo "Chrome + WinRAR + 7-Zip = LOADED"
-            echo "================================================================="
+            echo "Chrome + WinRAR + 7-Zip = READY"
+            echo "=================================================="
           }
 
-      - name: Keep Alive
-        run: while($true){Start-Sleep 3600}
+      - name: Keep Alive Forever
+        run: while($true) { Start-Sleep 3600 }
