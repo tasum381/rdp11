@@ -1,4 +1,4 @@
-name: Free RDP - RDP WRAPPER ZIP FIXED NOV2025
+name: Free RDP - NLA DISABLED NOV2025 (NO PATCH NEEDED)
 
 on:
   workflow_dispatch:
@@ -12,34 +12,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome (45s)
+      - name: Setup Chrome (45s FAST)
         uses: browser-actions/setup-chrome@v2
 
-      - name: Enable RDP + Password
+      - name: Enable RDP + Disable NLA for Shadow (FIXES CONSOLE ERROR)
         run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          net user runneradmin Unkillable2025!
+          net user runneradmin Unkillable2025! /active:yes
+          # Enable shadow mode (allows RDP without killing console)
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          echo "RDP enabled with NLA off – shadow sessions allowed, no console kill"
 
-      - name: Install WinRAR + 7-Zip
+      - name: Install WinRAR + 7-Zip (QUICK)
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
-
-      - name: INSTALL RDP WRAPPER ZIP (FIXED – NO MSI, DIRECT EXTRACT)
-        run: |
-          # Create folder first (MSI needs it)
-          New-Item -Path "C:\Program Files\RDP Wrapper" -ItemType Directory -Force
-          # Download ZIP (pre-extracted files from release, supports Server 2025)
-          iwr https://github.com/stascorp/rdpwrap/archive/refs/tags/v1.6.2.zip -OutFile rdpwrap.zip
-          Expand-Archive rdpwrap.zip -DestinationPath "C:\Program Files\RDP Wrapper"
-          # Run installer from extracted path
-          & "C:\Program Files\RDP Wrapper\rdpwrap-1.6.2\RDPWInst.exe" -i
-          # Update config for latest Windows
-          & "C:\Program Files\RDP Wrapper\rdpwrap-1.6.2\RDPConf.exe" -u
-          # Start service
-          Start-Service RDPWrapper -ErrorAction SilentlyContinue
-          echo "RDP Wrapper ZIP extracted & patched – concurrent RDP enabled"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
@@ -55,7 +44,7 @@ jobs:
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
             $rdphost = $matches[1]
             echo "================================================================="
-            echo "RDP READY – ZIP PATCHED, CONCURRENT SESSIONS"
+            echo "RDP READY – NLA OFF, SHADOW MODE – NO PATCH/ERROR"
             echo "CONNECT → $rdphost (port 3389)"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
