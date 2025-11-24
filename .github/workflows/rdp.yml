@@ -1,4 +1,4 @@
-name: Free RDP 16GB - NGROK FINAL 2025
+name: Free RDP 16GB - NGROK MOVE FIXED NOV2025
 
 on:
   workflow_dispatch:
@@ -12,10 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Chrome
+      - name: Setup Chrome (45s)
         uses: browser-actions/setup-chrome@v2
 
-      - name: Enable RDP + Disable NLA + Set Password
+      - name: Enable RDP + Disable NLA + Password
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
@@ -24,39 +24,36 @@ jobs:
 
       - name: Install WinRAR + 7-Zip
         run: |
-          iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; Start-Process -Wait w.exe /s
-          iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; Start-Process -Wait z.exe /S
+          iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
+          iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: Download & Extract ngrok
+      - name: Download & Start Ngrok (EXTRACT + MOVE FIXED)
         run: |
           iwr https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip -DestinationPath . -Force
-          Move-Item -Force ngrok/ngrok.exe ./
+          # Fixed move – check and move from subfolder
+          if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force; echo "Moved ngrok.exe to root" }
+          else { echo "Subfolder not found – fallback extract"; Expand-Archive ngrok.zip -DestinationPath ngrok-temp; Move-Item "ngrok-temp/ngrok.exe" . -Force }
+          .\ngrok.exe authtoken 35uzKmoraTsPEt4w0iclGzZrBtO_7qGvuXZSHnbiH2RqRfXE1
+          .\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
 
-      - name: Auth ngrok with secret token
-        run: .\ngrok.exe authtoken ${{ secrets.NGROK_TOKEN }}
-
-      - name: Start ngrok tunnel + log
+      - name: Wait & Show Ngrok URL
         run: |
-          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389 --log stdout" -RedirectStandardOutput "ngrok.log" -NoNewWindow
-          Start-Sleep -Seconds 25
-
-      - name: Show ngrok URL
-        run: |
-          $log = Get-Content ngrok.log -Raw
-          if ($log -match 'tcp://([0-9a-z\.\-]+tcp\.ngrok\.io:\d+)') {
-            $url = $matches[1]
-            Write-Output "=================================================="
-            Write-Output "NGROK RDP READY – 8+ HOURS STABLE"
-            Write-Output "CONNECT → tcp://$url"
-            Write-Output "BROWSER → https://$url"
-            Write-Output "Username → runneradmin"
-            Write-Output "Password → Unkillable2025!"
-            Write-Output "=================================================="
+          Start-Sleep -Seconds 20
+          $log = Get-Content ngrok.log -Raw -ErrorAction SilentlyContinue
+          if ($log -match 'tcp://([0-9a-z.-]+tcp\.ngrok\.io:\d+)') {
+            $ngrok = $matches[1]
+            echo "=================================================="
+            echo "YOUR NGROK RDP IS LIVE – 8+ HOURS STABLE"
+            echo "CONNECT → tcp://$ngrok"
+            echo "Username → runneradmin"
+            echo "Password → Unkillable2025!"
+            echo "Chrome + WinRAR + 7-Zip = READY"
+            echo "=================================================="
           } else {
-            Write-Output "Tunnel starting... full log:"
-            Get-Content ngrok.log
+            echo "Tunnel starting – full log:"
+            Get-Content ngrok.log -ErrorAction SilentlyContinue
           }
 
-      - name: Keep alive
+      - name: Keep Alive Forever
         run: while($true) { Start-Sleep 3600 }
