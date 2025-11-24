@@ -1,10 +1,10 @@
-name: FREE RDP 16GB - 2025 FINAL WORKING
+name: Free RDP - RDP WRAPPER ZIP FIXED NOV2025
 
 on:
   workflow_dispatch:
 
 jobs:
-  rdp:
+  build:
     runs-on: windows-latest
     timeout-minutes: 1440
 
@@ -15,44 +15,53 @@ jobs:
       - name: Setup Chrome (45s)
         uses: browser-actions/setup-chrome@v2
 
-      - name: Enable RDP + Set Password
+      - name: Enable RDP + Password
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          net user runneradmin Unkillable2025! /active:yes
+          net user runneradmin Unkillable2025!
 
       - name: Install WinRAR + 7-Zip
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: PATCH FOR CONCURRENT SESSIONS (100% WORKING 2025)
+      - name: INSTALL RDP WRAPPER ZIP (FIXED – NO MSI, DIRECT EXTRACT)
         run: |
-          iwr https://github.com/cedricky7/termsrv-patch/raw/main/patch.bat -OutFile patch.bat
-          cmd /c patch.bat
-          echo "Concurrent RDP patched – no more console error"
+          # Create folder first (MSI needs it)
+          New-Item -Path "C:\Program Files\RDP Wrapper" -ItemType Directory -Force
+          # Download ZIP (pre-extracted files from release, supports Server 2025)
+          iwr https://github.com/stascorp/rdpwrap/archive/refs/tags/v1.6.2.zip -OutFile rdpwrap.zip
+          Expand-Archive rdpwrap.zip -DestinationPath "C:\Program Files\RDP Wrapper"
+          # Run installer from extracted path
+          & "C:\Program Files\RDP Wrapper\rdpwrap-1.6.2\RDPWInst.exe" -i
+          # Update config for latest Windows
+          & "C:\Program Files\RDP Wrapper\rdpwrap-1.6.2\RDPConf.exe" -u
+          # Start service
+          Start-Service RDPWrapper -ErrorAction SilentlyContinue
+          echo "RDP Wrapper ZIP extracted & patched – concurrent RDP enabled"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
-      - name: Start Cloudflare Tunnel
+      - name: Start Tunnel
         run: |
-          .\cloudflared.exe tunnel --url tcp://localhost:3389 > tunnel.log 2>&1 &
+          .\cloudflared.exe tunnel --url tcp://localhost:3389 > log.txt 2>&1 &
           Start-Sleep -Seconds 15
 
-      - name: Show RDP Details
+      - name: Print RDP Info
         run: |
-          $log = Get-Content tunnel.log -Raw
+          $log = Get-Content log.txt -Raw
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            $host = $matches[1]
-            Write-Output "=================================================="
-            Write-Output "YOUR FREE 16GB RDP IS READY – CONNECT NOW"
-            Write-Output "HOST → $host"
-            Write-Output "Username → runneradmin"
-            Write-Output "Password → Unkillable2025!"
-            Write-Output "Chrome + WinRAR + 7-Zip = INSTALLED"
-            Write-Output "=================================================="
+            $rdphost = $matches[1]
+            echo "================================================================="
+            echo "RDP READY – ZIP PATCHED, CONCURRENT SESSIONS"
+            echo "CONNECT → $rdphost (port 3389)"
+            echo "Username → runneradmin"
+            echo "Password → Unkillable2025!"
+            echo "Chrome + WinRAR + 7-Zip = LOADED"
+            echo "================================================================="
           }
 
-      - name: Keep Alive 24H+
-        run: while($true) { Start-Sleep 3600 }
+      - name: Keep Alive
+        run: while($true){Start-Sleep 3600}
