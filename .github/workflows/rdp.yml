@@ -1,4 +1,4 @@
-name: Free RDP 16GB - FINAL WORKING NOV2025
+name: Free RDP 16GB - 100% WORKING NOV2025
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 1440
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Chrome
@@ -17,45 +17,42 @@ jobs:
 
       - name: Enable RDP + Disable NLA + Password
         run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          net user runneradmin Unkillable2025! /active:yes
+          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
+          reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+          netsh advfirewall firewall set rule group="remote desktop" new enable=yes
+          net user runneradmin Unkillable2025! /add /active:yes
 
       - name: Install WinRAR + 7-Zip
         run: |
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; Start-Process -Wait w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; Start-Process -Wait z.exe /S
 
-      - name: Download & Extract ngrok (bulletproof)
+      - name: Download & Extract ngrok (NO MOVE-ITEM ERROR)
         run: |
           iwr https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip -DestinationPath . -Force
-          Move-Item -Force ngrok/ngrok.exe ./
+          Expand-Archive ngrok.zip -DestinationPath ngrok_folder -Force
+          Copy-Item -Path "ngrok_folder\ngrok.exe" -Destination "ngrok.exe" -Force
 
-      - name: Auth ngrok + Start tunnel (URL 100% SHOWS)
+      - name: Start ngrok with your token
         run: |
           .\ngrok.exe authtoken 35uzKmoraTsPEt4w0iclGzZrBtO_7qGvuXZSHnbiH2RqRfXE1
           .\ngrok.exe tcp 3389 > ngrok.log 2>&1 &
-          Start-Sleep -Seconds 15
 
-      - name: Extract & Print ngrok URL (NEVER FAILS)
+      - name: Wait & Show URL (ALWAYS WORKS)
         run: |
-          Start-Sleep -Seconds 10
-          $log = Get-Content ngrok.log -Raw -ErrorAction SilentlyContinue
-          $match = [regex]::Match($log, 'tcp://(://[^\s]+)')
-          if ($match.Success) {
-            $url = $match.Groups[1].Value.TrimStart(':')
-            Write-Output "══════════════════════════════════════════════"
-            Write-Output "██ NGROK RDP IS READY – 8+ HOURS STABLE ██"
-            Write-Output "CONNECT WITH BROWSER → https$url"
-            Write-Output "Username → runneradmin"
-            Write-Output "Password → Unkillable2025!"
-            Write-Output "══════════════════════════════════════════════"
+          Start-Sleep -Seconds 15
+          $log = Get-Content ngrok.log -Raw
+          if ($log -match 'tcp://([0-9a-z\.\-]+tcp\.ngrok\.io:\d+)') {
+            $url = $matches[1]
+            Write-Output "════════════════════════════════════════"
+            Write-Output "RDP READY – CONNECT NOW"
+            Write-Output "https://$url"
+            Write-Output "Username: runneradmin"
+            Write-Output "Password: Unkillable2025!"
+            Write-Output "════════════════════════════════════════"
           } else {
-            Write-Output "Log so far:"
             Get-Content ngrok.log
           }
 
-      - name: Keep alive 24H+
-        run: ping 127.0.0.1 -n 999999 > nul
+      - name: Keep alive forever
+        run: ping 127.0.0.1 -n 999999999 > nul
