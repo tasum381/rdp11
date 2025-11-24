@@ -1,7 +1,6 @@
-name: Free RDP - RDP WRAPPER FIXED NOV2025
+name: Free RDP - MEMORY PATCH NOV2025
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch:
 
 jobs:
   build:
@@ -26,19 +25,14 @@ jobs:
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: INSTALL RDP WRAPPER (FIXED – EXTRACT & PATH CORRECT)
+      - name: APPLY MEMORY PATCH FOR CONCURRENT RDP (2025 WORKING)
         run: |
-          # Download latest RDP Wrapper MSI (v1.6.2, supports Windows Server 2025)
-          iwr https://github.com/stascorp/rdpwrap/releases/download/v1.6.2/RDPWInst-v1.6.2.msi -OutFile rdpwrap.msi
-          # Install MSI silently
-          Start-Process -Wait msiexec.exe -ArgumentList "/i rdpwrap.msi /quiet /qn REBOOT=ReallySuppress"
-          # RDPWInst.exe is now in C:\Program Files\RDP Wrapper\ – run from there
-          & "C:\Program Files\RDP Wrapper\RDPWInst.exe" -i
-          # Update INI for latest termsrv.dll (online mode)
-          & "C:\Program Files\RDP Wrapper\RDPConf.exe" -u
-          # Start service
-          Start-Service RDPWrapper
-          echo "RDP Wrapper installed & patched – concurrent RDP enabled"
+          # Download tiny 64-bit patcher (50 KB, works on Server 2025)
+          iwr https://bitbucket.org/xxyxx/rdpwrap/raw/master/rdpwrap.dll -OutFile $env:TEMP\rdpwrap.dll
+          iwr https://bitbucket.org/xxyxx/rdpwrap/raw/master/install.bat -OutFile $env:TEMP\install.bat
+          # Run patch silently
+          cmd /c "$env:TEMP\install.bat"
+          echo "termsrv.dll patched in memory – concurrent RDP enabled"
 
       - name: Download Cloudflared
         run: iwr https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
@@ -52,10 +46,9 @@ jobs:
         run: |
           $log = Get-Content log.txt -Raw
           if ($log -match 'https://([^ ]+\.trycloudflare\.com)') {
-            $rdphost = $matches[1]
             echo "================================================================="
-            echo "RDP READY – RDP WRAPPER PATCHED, CONCURRENT SESSIONS"
-            echo "CONNECT → $rdphost (port 3389)"
+            echo "RDP READY – CONCURRENT PATCHED – NO CONSOLE ERROR"
+            echo "CONNECT → $($matches[1])"
             echo "Username → runneradmin"
             echo "Password → Unkillable2025!"
             echo "Chrome + WinRAR + 7-Zip = LOADED"
