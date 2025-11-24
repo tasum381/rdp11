@@ -1,4 +1,4 @@
-name: Free RDP 16GB - NGROK FIXED NOV2025
+name: Free RDP 16GB - NGROK ULTRA FIXED NOV2025
 
 on:
   workflow_dispatch:
@@ -27,9 +27,9 @@ jobs:
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: Download & Start Ngrok (FIXED LINK 2025)
+      - name: Download & Start Ngrok (OFFICIAL LINK FIXED)
         run: |
-          iwr https://bin.ngrok.com/v3/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+          iwr https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
           Expand-Archive ngrok.zip -DestinationPath .
           .\ngrok.exe config add-authtoken 35uzKmoraTsPEt4w0iclGzZrBtO_7qGvuXZSHnbiH2RqRfXE1
           .\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
