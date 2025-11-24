@@ -1,4 +1,4 @@
-name: Free RDP 16GB - NGROK LOG FIXED NOV2025
+name: Free RDP 16GB - NGROK SECRET FIXED NOV2025
 
 on:
   workflow_dispatch:
@@ -27,21 +27,23 @@ jobs:
           iwr https://www.rarlab.com/rar/winrar-x64-701.exe -OutFile w.exe; ./w.exe /s
           iwr https://www.7-zip.org/a/7z2407-x64.exe -OutFile z.exe; ./z.exe /S
 
-      - name: Download & Start Ngrok (LOG FIXED)
-        run: |
-          iwr https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip -DestinationPath .
-          # Move ngrok.exe to root (fixes path/log creation)
-          if (Test-Path "ngrok/ngrok.exe") { Move-Item "ngrok/ngrok.exe" . -Force }
-          .\ngrok.exe authtoken 35uzKmoraTsPEt4w0iclGzZrBtO_7qGvuXZSHnbiH2RqRfXE1
-          # Start tunnel with explicit log redirect
-          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok.err" -NoNewWindow
+      - name: Download Ngrok
+        run: iwr https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
-      - name: Wait & Show Ngrok URL
+      - name: Extract Ngrok
+        run: Expand-Archive ngrok.zip -DestinationPath .
+
+      - name: Auth Ngrok (SECRET TOKEN)
+        run: .\ngrok\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Start Ngrok Tunnel (LOG REDIRECT FIXED)
         run: |
+          .\ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok.log 2>&1 &
           Start-Sleep -Seconds 20
+
+      - name: Show Ngrok URL (FALLBACK PARSE)
+        run: |
           $log = Get-Content ngrok.log -Raw -ErrorAction SilentlyContinue
-          if (-not $log -and (Test-Path ngrok.err)) { $log = Get-Content ngrok.err -Raw }
           if ($log -match 'tcp://([0-9a-z.-]+tcp\.ngrok\.io:\d+)') {
             $ngrok = $matches[1]
             echo "=================================================="
@@ -51,6 +53,9 @@ jobs:
             echo "Password → Unkillable2025!"
             echo "Chrome + WinRAR + 7-Zip = READY"
             echo "=================================================="
+          } else {
+            echo "Tunnel slow – check logs or re-run"
+            Get-Content ngrok.log
           }
 
       - name: Keep Alive Forever
